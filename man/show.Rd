@@ -2,17 +2,17 @@
 % Please edit documentation in R/1-2-methods.R
 \name{show}
 \alias{show}
-\alias{show,ZRiMM-method}
+\alias{show,RZiMM-method}
 \title{Method show for the package}
 \usage{
-\S4method{show}{ZRiMM}(object)
+\S4method{show}{RZiMM}(object)
 }
 \arguments{
-\item{object}{A \code{ZRiMM} object.}
+\item{object}{A \code{RZiMM} object.}
 }
 \description{
-The method show for \code{ZRiMM} object.
+The method show for \code{RZiMM} object.
 }
 \seealso{
-\code{\link{ZRiMM-class}}\cr
+\code{\link{RZiMM-class}}\cr
 }

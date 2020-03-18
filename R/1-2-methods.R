@@ -2,19 +2,19 @@
 ### Define generic functions: show, print, '[', '$', plot
 
 #################################
-#### ZRiMM class
+#### RZiMM class
 
 #' @name show
 #' @rdname show
 #'
 #' @title Method show for the package
 #'
-#' @description The method show for \code{ZRiMM} object.
+#' @description The method show for \code{RZiMM} object.
 #'
-#' @param object A \code{ZRiMM} object.
+#' @param object A \code{RZiMM} object.
 #'
 #' @seealso
-#' \code{\link{ZRiMM-class}}\cr
+#' \code{\link{RZiMM-class}}\cr
 #'
 NULL
 
@@ -23,7 +23,7 @@ NULL
 #'
 #' @export
 setMethod("show",
-          "ZRiMM",
+          "RZiMM",
           function(object) {
             
             cat("A", object@info$model.type, "Object \n")
