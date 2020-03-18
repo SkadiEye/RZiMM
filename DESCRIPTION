@@ -1,0 +1,17 @@
+Package: RZiMM
+Title: Regularized Zero-inflated Mixture Model for scRNA Data
+Version: 1.0.0.0
+Authors@R: 
+    person(given = "Xinlei",
+           family = "Mi",
+           role = c("aut", "cre"),
+           email = "xm2231@cumc.columbia.edu",
+           comment = c(ORCID = "0000-0002-2966-3217"))
+Description: RZiMM-scRNA is a regularized zero-inflated model designed for 
+  sparse scRNA data. It addresses the correlation between cells within sample, 
+  and simultaneously cluster cells and detect important genes. 
+License: GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
+Depends: magic, ROCR, gtools
+RoxygenNote: 7.1.0
