@@ -1,3 +1,14 @@
+###########################################################
+### n_clust
+
+#' Calculate how many different values in a vector (within a cutoff)
+#'
+#' @param v A vector
+#' @param cutoff The cutoff
+#'
+#' @return Returns a number object.
+#'
+#' @export
 n_clust <- function(v, cutoff) {
   
   v <- sort(v)
@@ -11,10 +22,39 @@ n_clust <- function(v, cutoff) {
   return(x)
 }
 
+###########################################################
+### RZiMM Model
+
+#' A Regularized Zero-inflated Mixture Model for scRNA Data
+#'
+#' @param x A n by p matrix, n cells x p genes. 
+#' @param mix_ind Sample index, for adjusting within-sample correlation; if set to be NULL,
+#'   the within-sample correlation will not be adjusted. 
+#' @param n_group Number of groups for clustering. 
+#' @param g_ind_init Initial cluster index. 
+#' @param n_iter Maximum number of total iteration. 
+#' @param n_iter_m Number of iteration for the majorization step. 
+#' @param lambda1 Weight of regularization for group effects. 
+#' @param lambda2 Weight of regularization for sample effects. 
+#' @param epsilon_l1 A small number to addess matrix singularity. 
+#' @param epsilon_l2 A small number to addess matrix singularity. 
+#' @param epsilon Iteration stops when the change from last iteration is smaller than this value.
+#' @param epsilon_p A small number for calculating the number of parameters. 
+#' @param print_e Whether to print the changes compared to the last iteration. 
+#'
+#' @return Returns an \code{RZiMM-class} object.
+#'
+#' @importFrom methods new
+#' @importFrom stats rnorm
+#' @importFrom stats na.omit
+#' @importFrom magic adiag
+#' 
+#' @seealso
+#' \code{\link{RZiMM-class}}\cr
+#'
+#' @export
 RZiMM <- function(x, mix_ind = NULL, n_group = 4, 
                   g_ind_init = NULL, 
-                  # prob_g = TRUE, 
-                  # scale_x = TRUE, 
                   n_iter = 100, 
                   n_iter_m = 5, 
                   lambda1 = 100, 
@@ -32,7 +72,7 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
   n_mix <- length(unique(mix_ind))
   
   if(is.null(g_ind_init)) {
-    g_ind_init <- matrix(rnorm(n_group*n), n_group, n)
+    g_ind_init <- matrix(stats::rnorm(n_group*n), n_group, n)
     g_ind_init <- (g_ind_init == (rep(1, n_group) %*% t(apply(g_ind_init, 2, max))))*1
   }
   
@@ -153,11 +193,11 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
     sum(abs(rep(1, length(x)) %*% t(x) - x %*% t(rep(1, length(x))))/2)
   })
   
-  return(new("RZiMM", cluster = apply(g_est, 2, which.max),
-             importance = importance_/n_group/(n_group - 1), 
-             param = list(pi = pi_est, m = m_est, sigma_sq = sigma_sq_est), 
-             info = list(bic = list(bic = bic_v00, ebic05 = bic_v05, ebic1 = bic_v10, bic_wang = bic_v_chen), 
-                         log_lik = na.omit(log_l), error_traj = na.omit(err_l), 
-                         lambda1 = lambda1, lambda2 = lambda2, n_group = n_group, 
-                         model.type = ifelse(length(unique(mix_ind)) == 1, "RZiMM-scRNA", "RZiMM-Naive"))))
+  return(methods::new("RZiMM", cluster = apply(g_est, 2, which.max),
+                      importance = importance_/n_group/(n_group - 1), 
+                      param = list(pi = pi_est, m = m_est, sigma_sq = sigma_sq_est), 
+                      info = list(bic = list(bic = bic_v00, ebic05 = bic_v05, ebic1 = bic_v10, bic_wang = bic_v_chen), 
+                                  log_lik = stats::na.omit(log_l), error_traj = stats::na.omit(err_l), 
+                                  lambda1 = lambda1, lambda2 = lambda2, n_group = n_group, 
+                                  model.type = ifelse(length(unique(mix_ind)) == 1, "RZiMM-scRNA", "RZiMM-Naive"))))
 }
