@@ -50,3 +50,27 @@ perf_stat <- function(ind_est, imp_score, cut_off, true_ind, true_imp) {
   return(data.frame(cls_acc = acc, auc = auc_, acc = acc_, 
                     spec = spec_, sens = sens_))
 }
+
+importance_plot <- function(rzimm_mod, cutoff = NULL, top = NULL) {
+  
+  imp <- rzimm_importance(rzimm_mod)
+  if(is.null(cutoff)) {
+    if(is.null(top)) {
+      color <- ifelse(rank(-imp) <= floor(length(imp)/10), "type1", "type2")
+    } else {
+      color <- ifelse(rank(-imp) <= top, "type1", "type2")
+    }
+  } else {
+    color <- ifelse(imp >= cutoff, "type1", "type2")
+  }
+  imp_dat <- data.frame(ind = 1:length(imp), 
+                        imp = imp, 
+                        color = color)
+  ggplot2::ggplot(imp_dat, aes(x = ind, y = imp)) + 
+    geom_segment(aes(x = ind, xend = ind, y = 0, yend = imp, color = color), size = 0.7, alpha = 1) + 
+    scale_color_manual(values=c("#E65F00", "#56B4E9")) + 
+    theme_light() + ylab("Importance") + xlab("Gene") + 
+    theme(legend.position = "none", 
+          axis.ticks.x = element_blank(), 
+          axis.text.x = element_blank())
+}

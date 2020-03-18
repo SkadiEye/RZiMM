@@ -154,7 +154,7 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
   })
   
   return(new("ZRiMM", cluster = apply(g_est, 2, which.max),
-             importance = importance_/n_group/n_group0, 
+             importance = importance_/n_group/(n_group - 1), 
              param = list(pi = pi_est, m = m_est, sigma_sq = sigma_sq_est), 
              info = list(bic = list(bic = bic_v00, ebic05 = bic_v05, ebic1 = bic_v10, bic_wang = bic_v_chen), 
                          log_lik = na.omit(log_l), error_traj = na.omit(err_l), 
