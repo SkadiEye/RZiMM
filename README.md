@@ -14,7 +14,7 @@ expressed genes among groups.
 In R,
 
 ``` r
-devtools::install_github("SkadiEye/deepTL")
+devtools::install_github("SkadiEye/RZiMM")
 ```
 
 # Example
