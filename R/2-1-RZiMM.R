@@ -111,12 +111,11 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
       if(lambda1 == 0 && lambda2 == 0) {
         
         MSM <- d_mat[, ind_j[[j]]] %*% t(d_mat[, ind_j[[j]]])
-        if(class(try(solve(MSM), silent = TRUE)) == "try-error")
+        if(class(try(solve(MSM), silent = TRUE))[1] == "try-error")
           MSM <- MSM + epsilon_l1 * diag(dim(MSM)[1])
         m_est[, j] <- solve(MSM) %*% 
           (d_mat[, ind_j[[j]]] %*% (x[ind_j[[j]], j]))
-      }
-      else {
+      } else {
         
         for(mmm in 1:n_iter_m) {
           bj <- abs(m_est[1:n_group, j] %*% t(rep(1, n_group)) - 
@@ -124,16 +123,21 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
           if(n_mix > 1) {
             
             cj <- abs(m_est[n_group + 1:(n_mix-1), j]) + epsilon_l2
-            MSM <- d_mat[, ind_j[[j]]] %*% t(d_mat[, ind_j[[j]]]) + 
-              magic::adiag(lambda1/n_group/(n_group-1) * (diag(rowSums(1/bj)) - 1/bj), lambda2 * diag(1/cj))
-            if(class(try(solve(MSM), silent = TRUE)) == "try-error")
+            if(n_mix > 2) {
+              MSM <- d_mat[, ind_j[[j]]] %*% t(d_mat[, ind_j[[j]]]) + 
+                magic::adiag(lambda1/n_group/(n_group-1) * (diag(rowSums(1/bj)) - 1/bj), lambda2 * diag(1/cj))
+            } else {
+              MSM <- d_mat[, ind_j[[j]]] %*% t(d_mat[, ind_j[[j]]]) + 
+                magic::adiag(lambda1/n_group/(n_group-1) * (diag(rowSums(1/bj)) - 1/bj), lambda2 * matrix(1/cj))
+            }
+            if(class(try(solve(MSM), silent = TRUE))[1] == "try-error")
               MSM <- MSM + epsilon_l1 * diag(dim(MSM)[1])
             m_est[, j] <- solve(MSM) %*% (d_mat[, ind_j[[j]]] %*% (x[ind_j[[j]], j]))
           } else {
             
             MSM <- d_mat[, ind_j[[j]]] %*% t(d_mat[, ind_j[[j]]]) + 
               lambda1/n_group/(n_group-1) * (diag(rowSums(1/bj)) - 1/bj)
-            if(class(try(solve(MSM), silent = TRUE)) == "try-error")
+            if(class(try(solve(MSM), silent = TRUE))[1] == "try-error")
               MSM <- MSM + epsilon_l1 * diag(dim(MSM)[1])
             m_est[, j] <- solve(MSM) %*% (d_mat[, ind_j[[j]]] %*% (x[ind_j[[j]], j]))
           }
