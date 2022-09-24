@@ -1,4 +1,4 @@
-RZiMM-scRNA
+RZiMM-scRNA [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4595924.svg)](https://doi.org/10.5281/zenodo.4595924)
 ================
 
 **RZiMM-scRNA**, a regularized zero-inflated mixture model designed for
