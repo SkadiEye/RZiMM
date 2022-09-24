@@ -17,35 +17,82 @@ In R,
 devtools::install_github("SkadiEye/RZiMM")
 ```
 
-# Example
+# Example (Normalized)
 
 ``` r
 suppressMessages(library(RZiMM))
 ## Load example data
 data("sim_x")
 x <- sim_x$x
+group_ind <- sim_x$cluster
 sample_index <- sim_x$sample_index
+imp_v <- sim_x$imp_gene_list
 
 set.seed(4321)
-## Run RZiMM model (adjusting for sample correlation)
-rzimm_mod <- RZiMM(x, sample_index, n_group = 4, lambda1 = 30)
+## Run RZiMM-scRNA (adjusting for sample correlation)
+mod_rzimm_sc <- RZiMM(x, sample_index, n_group = 4, lambda1 = 30)
+## Run RZiMM-Naive (not adjusting for sample correlation)
+mod_rzimm_na <- RZiMM(x, n_group = 4, lambda1 = 30)
+## Run RZiMM-GMM (Gaussian-Mixture)
+mod_rzimm_gm <- RZiMM_GMM(x, sample_index, n_group = 4, lambda1 = 0)
 
-## Clustering result
-table(rzimm_cluster(rzimm_mod), sim_x$cluster)
+## Clustering performance
+rbind(
+  data.frame(
+    method = "RZiMM-scRNA", 
+    clustering_scores(group_ind, mod_rzimm_sc@cluster), 
+    AUC = perf_stat(mod_rzimm_sc@importance, 0.1, imp_v)$AUC), 
+  data.frame(
+    method = "RZiMM-Naive", 
+    clustering_scores(group_ind, mod_rzimm_na@cluster), 
+    AUC = perf_stat(mod_rzimm_na@importance, 0.1, imp_v)$AUC), 
+  data.frame(
+    method = "RZiMM-GMM", 
+    clustering_scores(group_ind, mod_rzimm_gm@cluster), 
+    AUC = perf_stat(mod_rzimm_gm@importance, 1, imp_v)$AUC))
 ```
 
-    ##    
-    ##       1   2   3   4
-    ##   1   0   0   0 271
-    ##   2   0   0 244   0
-    ##   3 242   0   0   0
-    ##   4   0 243   0   0
+    ##        method       ARI       NMI Homogeneity       AUC
+    ## 1 RZiMM-scRNA 1.0000000 1.0000000   1.0000000 1.0000000
+    ## 2 RZiMM-Naive 0.5945923 0.7081437   0.7380899 0.9994222
+    ## 3   RZiMM-GMM 1.0000000 1.0000000   1.0000000 1.0000000
+
+# Example (Count)
 
 ``` r
-## Plot Impotance
-importance_plot(rzimm_mod)
+data("sim_y")
+x <- sim_y$x
+group_ind <- sim_y$cluster
+sample_index <- sim_y$sample_index
+imp_v <- sim_y$imp_gene_list
+
+set.seed(10086)
+## Run RZiMM-NB 
+mod_rzimm_nb <- RZiMM_Count(x, sample_index, n_group = 4, dist = "zinb")
+## Run RZiMM-Pois 
+mod_rzimm_ps <- RZiMM_Count(x, sample_index, n_group = 4, dist = "zip")
+## Run RZiMM-scRNA 
+mod_rzimm_sc <- RZiMM(x, sample_index, n_group = 4)
+
+## Clustering performance
+rbind(
+  data.frame(
+    method = "RZiMM-NB", 
+    clustering_scores(group_ind, mod_rzimm_nb@cluster), 
+    AUC = perf_stat(mod_rzimm_nb@importance, 0.1, imp_v)$AUC), 
+  data.frame(
+    method = "RZiMM-Pois", 
+    clustering_scores(group_ind, mod_rzimm_ps@cluster), 
+    AUC = perf_stat(mod_rzimm_ps@importance, 0.1, imp_v)$AUC), 
+  data.frame(
+    method = "RZiMM-scRNA", 
+    clustering_scores(group_ind, mod_rzimm_sc@cluster), 
+    AUC = perf_stat(mod_rzimm_sc@importance, 1, imp_v)$AUC))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+    ##        method       ARI       NMI Homogeneity AUC
+    ## 1    RZiMM-NB 0.9663742 0.9419806   0.9419342   1
+    ## 2  RZiMM-Pois 0.9711466 0.9522562   0.9521428   1
+    ## 3 RZiMM-scRNA 0.9661785 0.9471121   0.9467537   1
 
 # References

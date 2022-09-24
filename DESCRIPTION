@@ -5,7 +5,7 @@ Authors@R:
     person(given = "Xinlei",
            family = "Mi",
            role = c("aut", "cre"),
-           email = "xm2231@cumc.columbia.edu",
+           email = "xinlei.mi@northwestern.edu",
            comment = c(ORCID = "0000-0002-2966-3217"))
 Description: RZiMM-scRNA is a regularized zero-inflated model designed for 
   sparse scRNA data. It addresses the correlation between cells within sample, 
@@ -13,5 +13,5 @@ Description: RZiMM-scRNA is a regularized zero-inflated model designed for
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.5.0), magic, ROCR, gtools, ggplot2, methods
-RoxygenNote: 7.1.0
+Depends: R (>= 3.5.0), magic, ROCR, gtools, ggplot2, methods, mclust
+RoxygenNote: 7.2.1

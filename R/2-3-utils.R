@@ -65,14 +65,12 @@ step2_sig <- function(x, ind_pred) {
 }
 
 ###########################################################
-### Model Performance
+### DE Gene Identification Performance
 
-#' Model performance in a simulated scenario
+#' DE Gene Identification Performance with Known Truth
 #'
-#' @param ind_est Clustering result from an algorithm. 
 #' @param imp_score Importance scores from an algorithm. 
 #' @param cut_off Cutoff for importance score. 
-#' @param true_ind True clustering indices. 
 #' @param true_imp True importance (0 for unimportant; 1 for important). 
 #'
 #' @return Returns a list of performance scores. 
@@ -81,9 +79,8 @@ step2_sig <- function(x, ind_pred) {
 #' @importFrom ROCR performance
 #'
 #' @export
-perf_stat <- function(ind_est, imp_score, cut_off, true_ind, true_imp) {
+perf_stat <- function(imp_score, cut_off, true_imp) {
   
-  acc <- optim_ind(ind_est, true_ind)$acc
   pred_ <- ROCR::prediction(imp_score, true_imp)
   auc_ <- ROCR::performance(pred_, "auc")@y.values[[1]]
   acc_ <- ROCR::performance(pred_, "acc")
@@ -93,8 +90,39 @@ perf_stat <- function(ind_est, imp_score, cut_off, true_ind, true_imp) {
   spec_ <- spec_@y.values[[1]][which.min(abs(spec_@x.values[[1]] - cut_off))]
   sens_ <- sens_@y.values[[1]][which.min(abs(sens_@x.values[[1]] - cut_off))]
   
-  return(data.frame(cls_acc = acc, auc = auc_, acc = acc_, 
-                    spec = spec_, sens = sens_))
+  return(data.frame(AUC = auc_, ACC = acc_, Spec = spec_, Sens = sens_))
+}
+
+###########################################################
+### Clustering Performance
+
+#' Clustering Performance with Known Truth
+#'
+#' @param y True clustering labels. 
+#' @param pred Cluster labels from model. 
+#'
+#' @return Returns a list of performance scores. 
+#' 
+#' @importFrom mclust adjustedRandIndex
+#'
+#' @export
+clustering_scores <- function(y, pred) {
+  
+  n <- length(y)
+  ari <- mclust::adjustedRandIndex(y, pred)
+  
+  pij <- table(y, pred)/n
+  pii <- table(y, y)/n
+  pjj <- table(pred, pred)/n
+  p_i <- table(y)/n
+  p_j <- table(pred)/n
+  icc <- sum(pij*log2(pij/(p_i %*% t(p_j))), na.rm = TRUE)
+  hci <- sum(pii*log2(pii/(p_i %*% t(p_i))), na.rm = TRUE)
+  hcj <- sum(pjj*log2(pjj/(p_j %*% t(p_j))), na.rm = TRUE)
+  nmi <- icc/sqrt(hci*hcj)
+  hmg <- icc/hcj
+  
+  return(data.frame(ARI = ari, NMI = nmi, Homogeneity = hmg))
 }
 
 ###########################################################

@@ -1,31 +1,8 @@
 ###########################################################
-### n_clust
-
-#' Calculate how many different values in a vector (within a cutoff)
-#'
-#' @param v A vector
-#' @param cutoff The cutoff
-#'
-#' @return Returns a number object.
-#'
-#' @export
-n_clust <- function(v, cutoff) {
-  
-  v <- sort(v)
-  x <- length(v)
-  pre_v <- v[1]
-  for(vi in v[-1]) {
-    if(abs(vi - pre_v) < cutoff)
-      x <- x-1
-    pre_v <- vi
-  }
-  return(x)
-}
-
-###########################################################
-### RZiMM Model
+### RZiMM-GMM Model
 
 #' A Regularized Zero-inflated Mixture Model for scRNA Data
+#'   - Gaussian Mixture Version
 #'
 #' @param x A n by p matrix, n cells x p genes. 
 #' @param mix_ind Sample index, for adjusting within-sample correlation; if set to be NULL,
@@ -53,18 +30,18 @@ n_clust <- function(v, cutoff) {
 #' \code{\link{RZiMM-class}}\cr
 #'
 #' @export
-RZiMM <- function(x, mix_ind = NULL, n_group = 4, 
-                  g_ind_init = NULL, 
-                  n_iter = 100, 
-                  n_iter_m = 5, 
-                  lambda1 = 100, 
-                  lambda2 = 0, 
-                  epsilon_l1 = 10**-6, 
-                  epsilon_l2 = 10**-6, 
-                  epsilon = 10**-6, 
-                  epsilon_p = 10**-3, 
-                  print_e = FALSE) {
-    
+RZiMM_GMM <- function(x, mix_ind = NULL, n_group = 4, 
+                      g_ind_init = NULL, 
+                      n_iter = 100, 
+                      n_iter_m = 5, 
+                      lambda1 = 100, 
+                      lambda2 = 0, 
+                      epsilon_l1 = 10**-6, 
+                      epsilon_l2 = 10**-6, 
+                      epsilon = 10**-6, 
+                      epsilon_p = 10**-3, 
+                      print_e = FALSE) {
+  
   n <- dim(x)[1]
   p <- dim(x)[2]
   if(is.null(mix_ind))
@@ -74,6 +51,7 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
   if(is.null(g_ind_init)) {
     g_ind_init <- matrix(stats::rnorm(n_group*n), n_group, n)
     g_ind_init <- (g_ind_init == (rep(1, n_group) %*% t(apply(g_ind_init, 2, max))))*1
+    # g_ind_init <- matrix(1/n_group, n_group, n)
   }
   
   pi_est <- colMeans(x != 0)
@@ -99,6 +77,8 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
   else 
     d_mat <- g_est
   
+  omega_est <- rep(1/n_group, n_group)
+  
   for(l in 1:n_iter) {
     
     #### From last iteration
@@ -111,6 +91,9 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
       if(lambda1 == 0 && lambda2 == 0) {
         
         MSM <- d_mat[, ind_j[[j]]] %*% t(d_mat[, ind_j[[j]]])
+        MSM[1:n_group, 1:n_group] <- diag(rowSums(d_mat[1:n_group, ind_j[[j]]]))
+        
+        # browser()
         if(class(try(solve(MSM), silent = TRUE))[1] == "try-error")
           MSM <- MSM + epsilon_l1 * diag(dim(MSM)[1])
         m_est[, j] <- solve(MSM) %*% 
@@ -148,22 +131,28 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
     #### Update mu_mat, sigma_sq_est
     for(j in 1:p) 
       sigma_sq_est[j] <- mean(((x[ind_j[[j]], j] - 
-                                  as.numeric(t(d_mat[, ind_j[[j]]]) %*% m_est[, j])))**2)
+                                  as.numeric(t(d_mat[, ind_j[[j]]]) %*% m_est[, j])))**2) + 
+      c(t(m_est[1:n_group, j]) %*% (diag(rowSums(d_mat[1:n_group, ind_j[[j]]])) - 
+                                      d_mat[1:n_group, ind_j[[j]]] %*% t(d_mat[1:n_group, ind_j[[j]]])) %*%
+          m_est[1:n_group, j])/length(ind_j[[j]])
     
     #### Update g0
     for(i in 1:n) {
       mu_group <- m_est[1:n_group, ]
       if(mix_ind[i] < n_mix)
-        err <- (rep(1, n_group) %*% t(x[i, ] - m_est[n_group + mix_ind[i], ]) - mu_group)**2 / 
+        err <- (rep(1, n_group) %*% t(x[i, ] - m_est[n_group + mix_ind[i], ]) - mu_group)**2 /
           (rep(1, n_group) %*% t(sigma_sq_est)) / 2
-      else 
-        err <- (rep(1, n_group) %*% t(x[i, ]) - mu_group)**2 / 
+      else
+        err <- (rep(1, n_group) %*% t(x[i, ]) - mu_group)**2 /
           (rep(1, n_group) %*% t(sigma_sq_est)) / 2
+      err <- err + log(2*pi*rep(1, n_group) %*% t(sigma_sq_est))/2
       err <- rowSums(err[, x[i, ] != 0])
       err <- err - min(err)
-      g_est[, i] <- 0 
-      g_est[which.min(err), i] <- 1 
+      g_est[, i] <- exp(-err)*omega_est/sum(exp(-err)*omega_est)
     }
+    
+    #### Update omega_est
+    omega_est <- rowMeans(g_est)
     
     #### Calculate partial log-likelihood
     if(n_mix > 1)
@@ -174,9 +163,10 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
     log_l[l] <- 0
     for(j in 1:p)
       log_l[l] <- log_l[l] - 0.5*log(sigma_sq_est[j])*length(ind_j[[j]]) - 
-      sum((x[ind_j[[j]], j] - as.numeric(t(d_mat[, ind_j[[j]]]) %*% m_est[, j]))**2/2/sigma_sq_est[j])
-      
-    err_l[l] <- mean(apply(g_est, 2, which.max) != apply(g_est0, 2, which.max))
+      sum((x[ind_j[[j]], j] - as.numeric(t(d_mat[, ind_j[[j]]]) %*% m_est[, j]))**2/2/sigma_sq_est[j]) - 
+      c(t(m_est[1:n_group, j]) %*% (diag(rowSums(g_est)) - g_est %*% t(g_est)) %*% m_est[1:n_group, j])/2/sigma_sq_est[j]
+    
+    err_l[l] <- mean((m_est - m_est0)**2)
     
     if(print_e) print(c(l, err_l[l]))
     if(err_l[l] < epsilon)
@@ -200,8 +190,11 @@ RZiMM <- function(x, mix_ind = NULL, n_group = 4,
   return(methods::new("RZiMM", cluster = apply(g_est, 2, which.max),
                       importance = importance_/n_group/(n_group - 1), 
                       param = list(pi = pi_est, m = m_est, sigma_sq = sigma_sq_est), 
-                      info = list(bic = list(bic = ppx, mbic = ppy), 
+                      info = list(g_est = g_est, omega_est = omega_est, 
+                                  bic = list(bic = ppx, mbic = ppy), 
                                   log_lik = stats::na.omit(log_l), error_traj = stats::na.omit(err_l), 
                                   lambda1 = lambda1, lambda2 = lambda2, n_group = n_group, 
-                                  model.type = ifelse(length(unique(mix_ind)) == 1, "RZiMM-scRNA", "RZiMM-Naive"))))
+                                  model.type = "RZiMM-GMM")))
 }
+
+

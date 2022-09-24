@@ -2,18 +2,14 @@
 % Please edit documentation in R/2-3-utils.R
 \name{perf_stat}
 \alias{perf_stat}
-\title{Model performance in a simulated scenario}
+\title{DE Gene Identification Performance with Known Truth}
 \usage{
-perf_stat(ind_est, imp_score, cut_off, true_ind, true_imp)
+perf_stat(imp_score, cut_off, true_imp)
 }
 \arguments{
-\item{ind_est}{Clustering result from an algorithm.}
-
 \item{imp_score}{Importance scores from an algorithm.}
 
 \item{cut_off}{Cutoff for importance score.}
-
-\item{true_ind}{True clustering indices.}
 
 \item{true_imp}{True importance (0 for unimportant; 1 for important).}
 }
@@ -21,5 +17,5 @@ perf_stat(ind_est, imp_score, cut_off, true_ind, true_imp)
 Returns a list of performance scores.
 }
 \description{
-Model performance in a simulated scenario
+DE Gene Identification Performance with Known Truth
 }
